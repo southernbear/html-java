@@ -136,8 +136,6 @@ public class BlockLayout implements LayoutManager {
                 x = margin.left;
             	y = setPreferredChildHeight(element, spaces);
             	
-            	System.err.println(element.tagName() + " : (" + (x) + ", " + (y) + ")" + " : (" + width + ", " + height + ")");
-            	
         		c.setBounds(x, y, width, height);
             }
             else if (c.isVisible()) {
@@ -326,8 +324,6 @@ public class BlockLayout implements LayoutManager {
 			spaces.push(SpaceType.MARGIN, layout.getTopMargins());
 		
 		int y = spaces.getWidth();
-		
-		System.out.println(element.tagName() + "'s y :" + y);
 		
 		int height = layout.getOffsetHeight();
 		if (height > 0)

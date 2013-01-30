@@ -46,9 +46,6 @@ public class simple {
 
 		document.setTitle("sample");
         document.setDefaultCloseOperation(Document.EXIT_ON_CLOSE);
-        
-        System.err.println("Before visible");
-        
         document.setVisible(true);
 	}
 }
