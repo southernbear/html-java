@@ -3,7 +3,7 @@ import html2windows.css.FontPainter;
 import html2windows.dom.Document;
 import html2windows.dom.UIParser;
 import html2windows.css.CSS2Painter;
-import html2windows.css.CustomLayoutManager;
+import html2windows.css.BlockLayout;
 import html2windows.css.DocumentAtRuleHandler;
 
 import javax.swing.JFrame;
@@ -22,6 +22,7 @@ public class simple {
      */
     public static void main(String[] args) {
         Document document = new UIParser().parse(new File("ui.html"));
+        document.setLayout(new BlockLayout());
         document.setPainter(new CSS2Painter());
         document.setAtRuleHandler("document", new DocumentAtRuleHandler());
         
@@ -43,7 +44,11 @@ public class simple {
 		    ex.printStackTrace();
 		}
 
+		document.setTitle("sample");
         document.setDefaultCloseOperation(Document.EXIT_ON_CLOSE);
+        
+        System.err.println("Before visible");
+        
         document.setVisible(true);
 	}
 }
