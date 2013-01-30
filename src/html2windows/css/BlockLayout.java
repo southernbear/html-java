@@ -90,10 +90,10 @@ public class BlockLayout implements LayoutManager {
 		int contentWidth = parent.getWidth();
 		int contentHeight = parent.getHeight();
         
-        SpaceList spaces = new SpaceList();
+        SpaceAccumulator accumr = new SpaceAccumulator();
         
         if (parent instanceof Element) {
-        	setPreferredTopMargin((Element)parent, spaces);
+        	setPreferredTopMargin((Element)parent, accumr);
 			x = 0;
 			y = 0;
         }
@@ -134,7 +134,7 @@ public class BlockLayout implements LayoutManager {
         			height = contentHeight;
                 
                 x = margin.left;
-            	y = setPreferredChildHeight(element, spaces);
+            	y = setPreferredChildHeight(element, accumr);
             	
         		c.setBounds(x, y, width, height);
             }
@@ -143,12 +143,31 @@ public class BlockLayout implements LayoutManager {
 
                 c.setBounds(0, y, d.width, d.height);
 
-				spaces.push(SpaceType.HEIGHT, d.height);
+				accumr.push(SpaceType.HEIGHT, d.height);
             }
         }
     }
     
-    private int layoutWidth(int maxWidth, Element element, Style style, Border margin, Border border, Border padding){
+    /**
+     * Setup width of the element
+     *
+     * According to CSS Level 2 Visual Format Model
+     *
+     * @param maxWidth Maximum width
+     * @param element Element to be setup
+     * @param style Style of the element
+     * @param margin Margin of the element
+     * @param border Border of the element
+     * @param padding Padding of the element
+     *
+     * @return offset width, consists of border, padding and content
+     */
+    private int layoutWidth(int maxWidth, 
+    						Element element, 
+    						Style style, 
+    						Border margin, 
+    						Border border, 
+    						Border padding){
     	int offsetWidth;
     	
     	if (isAuto(style, "width")) {
@@ -197,7 +216,7 @@ public class BlockLayout implements LayoutManager {
         preferredWidth = 0;
         preferredHeight = 0;
         
-    	setPerferredWidth(parent);
+    	setPreferredWidth(parent);
     	setPreferredHeight(parent);
         
         sizeUnknown = false;
@@ -211,21 +230,21 @@ public class BlockLayout implements LayoutManager {
 	private void setPreferredHeight(Container parent){
 		boolean normalFlow = parent instanceof Element;
 		
-	    SpaceList spaces = new SpaceList();
+	    SpaceAccumulator accumr = new SpaceAccumulator();
 	    
 	    // Top margin, border and padding
 		if (normalFlow) {
-			setPreferredTopMargin((Element)parent, spaces);
+			setPreferredTopMargin((Element)parent, accumr);
         }
         
 		// Content box
 	    for (Component c : parent.getComponents()) {
 	        if (isInNormalFlow(c)) {
         		// Margin in normal flow may collapse
-        		setPreferredChildHeight((Element)c, spaces);
+        		setPreferredChildHeight((Element)c, accumr);
 	        }
 	        else if (c.isVisible()) {
-				spaces.push(SpaceType.HEIGHT, c.getPreferredSize().height);
+				accumr.push(SpaceType.HEIGHT, c.getPreferredSize().height);
 	        }
         }
         
@@ -241,27 +260,27 @@ public class BlockLayout implements LayoutManager {
 			
 			// Margin of root element will not collapse
 			if (!(element.parentNode() instanceof Element)) {
-				spaces.push(SpaceType.HEIGHT, 0);
+				accumr.push(SpaceType.HEIGHT, 0);
 			}
 			
 			if (border.bottom != 0 || padding.bottom != 0) {
-				spaces.push(SpaceType.HEIGHT, border.bottom + padding.bottom);
+				accumr.push(SpaceType.HEIGHT, border.bottom + padding.bottom);
 			}
 			else if (!isAuto(style, "height") || getPxNumber(style.getProperty("min-height")) != 0) {
-				spaces.push(SpaceType.HEIGHT, 0);
+				accumr.push(SpaceType.HEIGHT, 0);
 			}
 			
 			if (margin.bottom != 0)
-				spaces.push(SpaceType.MARGIN, margin.bottom);
+				accumr.push(SpaceType.MARGIN, margin.bottom);
         }
         
         if (normalFlow) {
-			int topMargin = spaces.getTopMargin();
-			int height = spaces.getOffsetHeight();
-			int bottomMargin = spaces.getBottomMargin();
+			int topMargin = accumr.getTopMargin();
+			int height = accumr.getOffsetHeight();
+			int bottomMargin = accumr.getBottomMargin();
 			
-			topMargins = spaces.getTopMargins();
-			bottomMargins = spaces.getBottomMargins();
+			topMargins = accumr.getTopMargins();
+			bottomMargins = accumr.getBottomMargins();
 			
 			Style style = ((Element)parent).getStyle();
 			height = Math.max(getHeight(style), height);
@@ -271,7 +290,7 @@ public class BlockLayout implements LayoutManager {
 			preferredHeight = topMargin + offsetHeight + bottomMargin;
         }
         else {
-			offsetHeight = spaces.totalWidth();
+			offsetHeight = accumr.totalWidth();
 			topMargins = new int[0];
 			bottomMargins = new int[0];
 			
@@ -279,7 +298,16 @@ public class BlockLayout implements LayoutManager {
         }
     }
     
-    private void setPreferredTopMargin(Element element, SpaceList spaces){
+    /**
+     * Setup top margin
+     *
+     * If there is no top border or top padding, the top margin may collapse 
+     * with top margin of first child except the containing is root element.
+     *
+     * @param element Containing element
+     * @param accumr Height accumulator
+     */
+    private void setPreferredTopMargin(Element element, SpaceAccumulator accumr){
 		Style style = element.getStyle();
 		BlockLayout layout = (BlockLayout)element.getLayout();
 		
@@ -288,66 +316,60 @@ public class BlockLayout implements LayoutManager {
 		Border padding = getBorder(style, Box.PADDING);
 		
 		if (margin.top != 0)
-			spaces.push(SpaceType.MARGIN, margin.top);
+			accumr.push(SpaceType.MARGIN, margin.top);
 		
 		if (border.top != 0 || padding.top != 0) {
-			spaces.push(SpaceType.HEIGHT, border.top + padding.top);
+			accumr.push(SpaceType.HEIGHT, border.top + padding.top);
 		}
 		
 		// Margin of root element will not collapse
 		if (!(element.parentNode() instanceof Element)) {
-			spaces.push(SpaceType.HEIGHT, 0);
+			accumr.push(SpaceType.HEIGHT, 0);
 		}
 	}
     
     /**
-     * Return height of child
+     * Setup top and bottom margin and height of child
      *
-     * margin of elements in normal flow may collapse.
+     * @param element The child
+     * @param accumr Height accumulator
      *
-     * @return height of child
+     * @return Start position of child
      */
-    private int setPreferredChildHeight(Element element, SpaceList spaces){
+    private int setPreferredChildHeight(Element element, SpaceAccumulator accumr){
     	Style style = element.getStyle();
     	BlockLayout layout = (BlockLayout)element.getLayout();
 		
         if("none".equals(style.getProperty("display"))) {
-        	return spaces.getWidth();
+        	return accumr.getWidth();
         }
 		
     	// Stop collapsing if child has clearance
     	if (hasClearance(style)) {
-    		spaces.push(SpaceType.CLEAR, 0);
+    		accumr.push(SpaceType.CLEAR, 0);
 		}
 		
 		if (layout.getTopMargins().length > 0)
-			spaces.push(SpaceType.MARGIN, layout.getTopMargins());
+			accumr.push(SpaceType.MARGIN, layout.getTopMargins());
 		
-		int y = spaces.getWidth();
+		int y = accumr.getWidth();
 		
 		int height = layout.getOffsetHeight();
 		if (height > 0)
-			spaces.push(SpaceType.HEIGHT, layout.getOffsetHeight());
+			accumr.push(SpaceType.HEIGHT, layout.getOffsetHeight());
 			
 		if (layout.getBottomMargins().length > 0)
-			spaces.push(SpaceType.MARGIN, layout.getBottomMargins());
+			accumr.push(SpaceType.MARGIN, layout.getBottomMargins());
 			
 		return y;
     }
     
     /**
-     * Calculate total height
+     * Setup preferred width
      *
-     * margin of elements in normal flow may collapse.
+     * @param parent The container to be setup
      */
-    private void evalSpaces(Container parent, SpaceList spaces){
-    	// top margin
-    }
-    
-    /**
-     * Calculate total width
-     */
-    private void setPerferredWidth(Container parent){
+    private void setPreferredWidth(Container parent){
     	int width = 0;
     	for (Component c : parent.getComponents()) {
     		width = Math.max(width, c.getPreferredSize().width);
@@ -411,6 +433,13 @@ public class BlockLayout implements LayoutManager {
         return preferredLayoutSize(parent);
     }
     
+    /**
+     * Return normal flow size
+     *
+     * @param parent The element whose size is returned
+     *
+     * @return Normal flow size
+     */
     public Dimension normalFlowSize(Element parent) {
         Dimension dim = new Dimension(0, 0);
         
@@ -435,14 +464,38 @@ public class BlockLayout implements LayoutManager {
 	   return dim;
     }
     
+    /**
+     * Return top margin array
+     *
+     * Array consists of top margin of the container and margins 
+     * collapsed with.
+     *
+     * @return top margin array
+     */
     private int[] getTopMargins(){
     	return topMargins;
     }
     
+    /**
+     * Return bottom margin array
+     *
+     * Array consists of bottom margin of the container and margins 
+     * collapsed with.
+     *
+     * @return bottom margin array
+     */
     private int[] getBottomMargins(){
     	return bottomMargins;
     }
     
+    /**
+     * Return offset height
+     *
+     * Offset height contains top border, top padding, content, bottom 
+     * padding and bottom border.
+     *
+     * @return offset height
+     */
     private int getOffsetHeight(){
     	return offsetHeight;
     }
@@ -550,12 +603,18 @@ public class BlockLayout implements LayoutManager {
         return 0;
     }
 
+	/**
+	 * Type of border boxes
+	 */
     public enum Box{
     	MARGIN,
     	BORDER,
     	PADDING
     }
     
+	/**
+	 * Type of edges
+	 */
     public enum Edge{
     	TOP,
     	RIGHT,
@@ -563,6 +622,9 @@ public class BlockLayout implements LayoutManager {
     	LEFT
     }
     
+	/**
+	 * Border width
+	 */
     public class Border{
     	public int top;
     	public int right;
@@ -570,6 +632,14 @@ public class BlockLayout implements LayoutManager {
     	public int left;
     }
     
+    /**
+     * Return border with widths
+     *
+     * @param style Element style
+     * @param box Box type of border
+     *
+     * @return Border with widths
+     */
     private Border getBorder(Style style, Box box){
     	Border border = new Border();
     	border.top = getWidth(style, box, Edge.TOP);
@@ -609,17 +679,43 @@ public class BlockLayout implements LayoutManager {
 				+ getWidth(style, Box.PADDING, edge);
 	}
 	
-	
+    /**
+     * Return whether element has value 'auto' for the property
+     *
+     * @param style Element style
+     * @param property Tested property
+     *
+     * @return Whether element has value 'auto' for the property
+     */
 	private boolean isAuto(Style style, String property){
 		String value = style.getProperty(property);
 		return value == null || "auto".equals(value.trim());
 	}
 	
+	/**
+     * Return whether a element has clearance
+     *
+     * Having clearance means has value other than 'none' for 'clear' 
+     *
+     * @param style Element style
+     *
+     * @return Whether a element has clearance
+     */
 	private boolean hasClearance(Style style){
 		String value = style.getProperty("clear");
 		return value != null && !"none".equals(value.trim());
 	}
 	
+	/**
+     * Return limited value
+     *
+     * @param style Element style
+     * @param minProp Lower bound
+     * @param maxProp Upper bound
+     * @param value	Value to cut
+     *
+     * @return Limited value
+     */
 	private int limit(Style style, String minProp, String maxProp, int value){
 		if (style.getProperty(maxProp) != null)
     		value = Math.min(getPxNumber(style.getProperty(maxProp)), value);
@@ -644,18 +740,38 @@ public class BlockLayout implements LayoutManager {
         }
         return position;
     }
-    
+    	
+	/**
+     * Return whether a component is in normal flow
+     *
+     * If a component is in normal flow, the component is a element and
+     * it is block level.
+     *
+     * @param comp Component to be tested
+     *
+     * @return Whether a component is in normal flow
+     */
     private boolean isInNormalFlow(Component comp){
     	return comp instanceof Element && ((Container)comp).getLayout() instanceof BlockLayout;
     }
-    
+    	
+	/**
+     * Space type
+     */
     private enum SpaceType{
     	MARGIN,
     	HEIGHT,
     	CLEAR
     }
     
-    private class SpaceList{
+    /**
+     * Accumulator helps calculate height of a container
+     *
+     * Collapsing between adjacent margins according to CSS level 2 except
+     * that bottom margin of container not collapse with margins overlap
+     * with clearance.
+     */
+    private class SpaceAccumulator{
     	private ArrayList<Integer> margins = new ArrayList<Integer>();
     	
     	private boolean isTopMarginSet = false;
@@ -668,8 +784,10 @@ public class BlockLayout implements LayoutManager {
     	private int minMargin = 0;
     	
     	/**
+    	 * Add a space and calculate
     	 *
-    	 * @note Ignore that bottom margin of container not collapse with margins overlap with clearance.
+    	 * @param type Type of adding space
+    	 * @param width Width of adding space
     	 */
     	public void push(SpaceType type, int width){
     		if (type == SpaceType.MARGIN) {
@@ -700,6 +818,12 @@ public class BlockLayout implements LayoutManager {
     		}
     	}
     	
+    	/**
+    	 * Add lots of space
+    	 *
+    	 * @param type Type of adding space
+    	 * @param widths Array of widths of adding spaces
+    	 */
     	public void push(SpaceType type, int[] widths){
     		for (int width : widths) {
     			push(type, width);
