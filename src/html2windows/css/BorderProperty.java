@@ -29,7 +29,7 @@ public enum BorderProperty{
 		String[] text = name().split("_");
 		if (text.length > 1){
 			try {
-				return Edge.valueOf(text[2]);
+				return Edge.valueOf(text[1]);
 			}
 			catch (IllegalArgumentException ex) {
 			}
