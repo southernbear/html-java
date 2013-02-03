@@ -118,6 +118,14 @@ public class BorderPainter extends JPanel implements CSSPainter{
 	    								width,
 	    								compWidth);
 							break;
+	    				case DASHED :
+	    					paintDashed(g2d,
+	    								orientation,
+	    								start[i][0],
+	    								start[i][1],
+	    								width,
+	    								compWidth);
+							break;
 		    		}
 		    	}
 		    }
@@ -243,6 +251,24 @@ public class BorderPainter extends JPanel implements CSSPainter{
 		g.setStroke(new BasicStroke(width, BasicStroke.CAP_SQUARE,
 					BasicStroke.JOIN_MITER, 10f,
 					new float[] {0, width * 2}, width * 1.5f));
+		
+		int x1 = cell(left + width * 0.5 * vertical(orientation));
+		int y1 = cell(top  + width * 0.5 * horizontal(orientation));
+		int x2 = x1 + length * horizontal(orientation);
+		int y2 = y1 + length * vertical(orientation);
+		
+		g.drawLine(x1, y1, x2, y2);
+	}
+	
+	private void paintDashed(Graphics2D g,
+							 Orientation orientation,
+							 int top,
+							 int left,
+							 int width,
+							 int length){
+		g.setStroke(new BasicStroke(width, BasicStroke.CAP_SQUARE,
+					BasicStroke.JOIN_MITER, 10f,
+					new float[] {width, width * 3}, 0f));
 		
 		int x1 = cell(left + width * 0.5 * vertical(orientation));
 		int y1 = cell(top  + width * 0.5 * horizontal(orientation));
