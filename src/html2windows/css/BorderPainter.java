@@ -110,6 +110,14 @@ public class BorderPainter extends JPanel implements CSSPainter{
 	    								width,
 	    								compWidth);
 							break;
+	    				case DOTTED :
+	    					paintDotted(g2d,
+	    								orientation,
+	    								start[i][0],
+	    								start[i][1],
+	    								width,
+	    								compWidth);
+							break;
 		    		}
 		    	}
 		    }
@@ -224,6 +232,24 @@ public class BorderPainter extends JPanel implements CSSPainter{
 			int y2 = y1 + length * vertical(orientation);
 			g.drawLine(x1, y1, x2, y2);
 		}
+	}
+	
+	private void paintDotted(Graphics2D g,
+							 Orientation orientation,
+							 int top,
+							 int left,
+							 int width,
+							 int length){
+		g.setStroke(new BasicStroke(width, BasicStroke.CAP_SQUARE,
+					BasicStroke.JOIN_MITER, 10f,
+					new float[] {0, width * 2}, width * 1.5f));
+		
+		int x1 = (int)Math.ceil(left + width * 0.5 * vertical(orientation));
+		int y1 = (int)Math.ceil(top  + width * 0.5 * horizontal(orientation));
+		int x2 = x1 + length * horizontal(orientation);
+		int y2 = y1 + length * vertical(orientation);
+		
+		g.drawLine(x1, y1, x2, y2);
 	}
 	
 	private int horizontal(Orientation orientation){
