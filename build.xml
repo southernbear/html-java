@@ -42,7 +42,7 @@
 	</target>
 
     <target name="sample" depends="compile-sample">
-        <java classname="simple">
+        <java classname="simple" fork="true">
             <arg value="-cp build"/>
             <classpath>
                 <path refid="lib-classpath"/>
