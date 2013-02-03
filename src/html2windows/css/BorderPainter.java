@@ -96,7 +96,7 @@ public class BorderPainter implements CSSPainter{
 	    								startTL[i][0],
 	    								startTL[i][1],
 	    								width,
-	    								compWidth);
+	    								length);
 		    				break;
 	    				case DOUBLE :
 	    					paintDouble(g2d,
@@ -104,7 +104,7 @@ public class BorderPainter implements CSSPainter{
 	    								startTL[i][0],
 	    								startTL[i][1],
 	    								width,
-	    								compWidth);
+	    								length);
 							break;
 	    				case DOTTED :
 	    					paintDotted(g2d,
@@ -112,7 +112,7 @@ public class BorderPainter implements CSSPainter{
 	    								startTL[i][0],
 	    								startTL[i][1],
 	    								width,
-	    								compWidth);
+	    								length);
 							break;
 	    				case DASHED :
 	    					paintDashed(g2d,
@@ -120,7 +120,7 @@ public class BorderPainter implements CSSPainter{
 	    								startTL[i][0],
 	    								startTL[i][1],
 	    								width,
-	    								compWidth);
+	    								length);
 							break;
 		    		}
 		    		
@@ -180,9 +180,12 @@ public class BorderPainter implements CSSPainter{
 							 int left,
 							 int width,
 							 int length){
-		g.setStroke(new BasicStroke(width, BasicStroke.CAP_SQUARE,
+		int m = length / (width);
+		float dotWidth = ((float)length) / ((m % 2 == 0) ? m + 1 : m) ;
+		
+		g.setStroke(new BasicStroke(width, BasicStroke.CAP_BUTT,
 					BasicStroke.JOIN_MITER, 10f,
-					new float[] {0, width * 2}, width * 1.5f));
+					new float[] {dotWidth, dotWidth}, 0f));
 		
 		int x1 = cell(left + width * 0.5 * vertical(orientation));
 		int y1 = cell(top  + width * 0.5 * horizontal(orientation));
@@ -198,9 +201,12 @@ public class BorderPainter implements CSSPainter{
 							 int left,
 							 int width,
 							 int length){
-		g.setStroke(new BasicStroke(width, BasicStroke.CAP_SQUARE,
+		int m = length / (width * 2);
+		float dashWidth = ((float)length) / ((m % 2 == 0) ? m + 1 : m) ;
+							 
+		g.setStroke(new BasicStroke(width, BasicStroke.CAP_BUTT,
 					BasicStroke.JOIN_MITER, 10f,
-					new float[] {width, width * 3}, 0f));
+					new float[] {dashWidth, dashWidth}, 0f));
 		
 		int x1 = cell(left + width * 0.5 * vertical(orientation));
 		int y1 = cell(top  + width * 0.5 * horizontal(orientation));
