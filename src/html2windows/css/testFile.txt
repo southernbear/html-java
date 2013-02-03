@@ -1,2 +1,0 @@
-buttona { height: 100px;
-        }
