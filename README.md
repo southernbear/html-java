@@ -1,8 +1,8 @@
-HtmlToJavaWindowsBuilder
+HTML  Java
 ========================
 
 ##What's this?
-這是一個能用HTML來寫視窗程式的Library
+A library parsing html and css to a native java window, and offering DOM interface to manipulate.
 
 ##Why to use?
-希望會寫網頁的程式設計師可以直接套用此Library來撰寫視窗程式
+If you are familiar with html, css, and DOM but feel AWT or Swing hard to use, try it.
