@@ -1,9 +1,17 @@
 package html2windows.dom;
 
+import html2windows.css.CSSParser;
+import html2windows.css.CSSRuleSet;
+import html2windows.css.CSSRuleSetPriority;
+import html2windows.css.CSS1RuleSetPriority;
+import html2windows.css.handler.PropertyHandler;
 import html2windows.css.AtRuleHandler;
 
 import java.awt.Component;
 import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.HashSet;
 
 import javax.swing.JFrame;
 
@@ -35,6 +43,10 @@ public class Document extends JFrame implements Node{
 
     HashMap<String, AtRuleHandler> atRuleHandlerMap = new HashMap<String, AtRuleHandler>();
     
+    private CSSParser parser;
+    
+    private Set<PropertyHandler> cssPropertyHandlers =
+    	new HashSet<PropertyHandler>();
 	
 	/**
 	 * Return the document element, the root
@@ -59,7 +71,7 @@ public class Document extends JFrame implements Node{
 	 * @return A new Element object with the nodeName attribute set to tagName
 	 */
 	public Element createElement(String tagName) throws DOMException{
-		ElementInter element = new ElementInter(tagName);
+		ElementInter element = new ElementInter(this, tagName);
 		element.setOwnerDocument(this);
 		return element;
 	}
@@ -603,5 +615,28 @@ public class Document extends JFrame implements Node{
 	 */
     public CSSPainter getPainter() {
         return this.painter;
+    }
+    
+    public void setCSSParser(CSSParser parser){
+    	this.parser = parser;
+    }
+    
+    public CSSParser getCSSParser(){
+    	return this.parser;
+    }
+    
+    public void addCSSPropertyHandler(PropertyHandler handler){
+    	cssPropertyHandlers.add(handler);
+    }
+    
+    public PropertyHandler[] getCSSPropertyHandlers(){
+    	return cssPropertyHandlers.toArray(
+    			new PropertyHandler[cssPropertyHandlers.size()]);
+    }
+    
+    public CSSRuleSetPriority getCSSRuleSetPriority(CSSRuleSet ruleSet,
+    												String selectorText,
+    												int serial){
+    	return new CSS1RuleSetPriority(ruleSet, selectorText, serial);
     }
 }

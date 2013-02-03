@@ -1,8 +1,14 @@
 package html2windows.css;
 
+import html2windows.css.handler.PropertyHandler;
+
 import java.util.Comparator;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.NavigableSet;
 import java.util.TreeSet;
 
+import html2windows.dom.Document;
 import html2windows.dom.Element;
 
 /**
@@ -10,7 +16,7 @@ import html2windows.dom.Element;
  * You can add CSSRuleSet to Style or set property to CSSRuleSet in Style.
  * You can also get properties from CSSRuleSet in Style in the order of priority.
  * 
- * @author 		Jason Kuo
+ * @author Jason Kuo, Southernbear
  */
 
 public class Style {
@@ -33,7 +39,23 @@ public class Style {
 	/**
 	 * TreeSet of CSSRuleSet
 	 */
-	private TreeSet <CSSRuleSet> set = new TreeSet<CSSRuleSet>(comparator);
+	private TreeSet <CSSRuleSet> iterateRuleSets =
+		new TreeSet<CSSRuleSet>(comparator);
+		
+	private NavigableSet<CSSRuleSet> searchRuleSets;
+	
+	/**
+	 * TreeSet of CSSRuleSet
+	 */
+	private HashMap<CSSRuleSet, CSSRuleSetPriority> ruleSetPriorities =
+		new HashMap<CSSRuleSet, CSSRuleSetPriority>();
+	
+	/**
+	 * Data storage for CSS module
+	 */
+	private Map<String, Object> handlerDataMap = new HashMap<String, Object>();
+	
+	private int orderCounter = 0;
 	
 	/**
 	 * Create style and add it to CSSRuleSet
@@ -42,8 +64,15 @@ public class Style {
 	 */
 	public Style(Element element){
 		this.element=element;
-		CSSRuleSet ruleSet=new CSSRuleSet(MAX_PRIORITY);
-		set.add(ruleSet);
+		this.searchRuleSets = iterateRuleSets.descendingSet();
+		
+		Document document = element.ownerDocument();
+		CSSParser parser = document.getCSSParser();
+		
+		initialize();
+		
+		CSSRuleSet inline = new CSSRuleSet(parser, Origin.INLINE, null);
+		addCSSRuleSet(inline, "");
 	}
 	
     /**
@@ -53,7 +82,21 @@ public class Style {
      * @param value		 		inserted property value
      */
     public void setProperty(String propertyName, String value){
-        set.first().setProperty(propertyName,value);
+        boolean successful = searchRuleSets.first().setProperty(propertyName,value);
+        if (!successful)
+        	return;
+        	
+    	Document document = element.ownerDocument();
+    	PropertyHandler[] handlers = document.getCSSPropertyHandlers();
+    	for (PropertyHandler handler : handlers) {
+			Object data = handlerDataMap.get(handler.getName());
+			data = handler.onSetProperty(propertyName,
+										 value,
+										 searchRuleSets.first(),
+										 this,
+										 data);
+			handlerDataMap.put(handler.getName(), data);
+    	}
     }
     
     /**
@@ -64,12 +107,33 @@ public class Style {
      */
     public String getProperty(String propertyName){
     	String value=null;
-    	for(CSSRuleSet ruleSet : set){
+    	for(CSSRuleSet ruleSet : searchRuleSets){
     		value=ruleSet.getProperty(propertyName);
     		if(value!=null)
     			return value;
     	}
         return null;	
+    }
+    
+    /**
+     * Return computed value of property
+     *
+     * Computed value is parsed value, not final value.
+     *
+     * @param propertyName Name of property
+     *
+     * @return Computed value of property or null if value is not specified or
+     *         failed to parse.
+     */
+    public Object getPropertyComputedValue(String propertyName){
+    	Object value;
+    	for (CSSRuleSet ruleSet : searchRuleSets) {
+    		value = ruleSet.getPropertyComputedValue(propertyName);
+    		if (value != null) {
+    			return value;
+    		}
+    	}
+    	return null;
     }
   
     /**
@@ -77,8 +141,15 @@ public class Style {
      * 
      * @param cssRuleSet		CSSRuleSet to be added
      */
-    public void addCSSRuleSet(CSSRuleSet cssRuleSet){
-    	set.add(cssRuleSet);
+    public void addCSSRuleSet(CSSRuleSet cssRuleSet, String selectorText){
+    	Document document = element.ownerDocument();
+    	CSSRuleSetPriority priority =
+    		document.getCSSRuleSetPriority(cssRuleSet, selectorText, orderCounter++);
+    		
+		ruleSetPriorities.put(cssRuleSet, priority);
+		iterateRuleSets.add(cssRuleSet);
+    	
+    	evaluate();
     }
     
     /**
@@ -88,6 +159,36 @@ public class Style {
      */
     public Element getElement(){
         return element;
+    }
+    
+    public Object getPropertyHandlerData(String handlerName){
+    	return handlerDataMap.get(handlerName);
+    }
+    
+    private void initialize(){
+    	Document document = element.ownerDocument();
+    	PropertyHandler[] handlers = document.getCSSPropertyHandlers();
+    	
+    	// Refresh
+    	for (PropertyHandler handler : handlers) {
+			Object data = handler.initialize(this);
+			handlerDataMap.put(handler.getName(), data);
+    	}
+    }
+    
+    private void evaluate(){
+    	initialize();
+    	
+    	Document document = element.ownerDocument();
+    	PropertyHandler[] handlers = document.getCSSPropertyHandlers();
+    	
+    	for (CSSRuleSet cssRuleSet : iterateRuleSets) {
+			for (PropertyHandler handler : handlers) {
+				Object data = handlerDataMap.get(handler.getName());
+				data = handler.onAddCSSRuleSet(cssRuleSet, this, data);
+				handlerDataMap.put(handler.getName(), data);
+			}
+    	}
     }
     
     /**
@@ -103,7 +204,9 @@ public class Style {
     	 */
     	@Override
 		public int compare(CSSRuleSet o1, CSSRuleSet o2) {
-			return (o1.getPriority()>o2.getPriority())?1:-1;
+			CSSRuleSetPriority p1 = ruleSetPriorities.get(o1),
+							   p2 = ruleSetPriorities.get(o2);
+			return p1.compareTo(p2);
 		}
 	}
 }

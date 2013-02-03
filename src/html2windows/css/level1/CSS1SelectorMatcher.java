@@ -1,10 +1,13 @@
 package html2windows.css.level1;
 
+import java.util.List;
 import java.util.ArrayList;
 
 import html2windows.dom.Node;
 import html2windows.dom.Element;
 import html2windows.dom.Document;
+
+import html2windows.util.Pair;
 
 /**
  * Match and list elements in given document matching a specified selector.
@@ -28,8 +31,10 @@ public class CSS1SelectorMatcher implements html2windows.css.SelectorMatcher{
 	 *
 	 * @return List of matched elements.
 	 */
-	public ArrayList<Element> getElementBySelector(String selectorGroupText, Document document){
-		ArrayList<Element> result = new ArrayList<Element>();
+	public List<Pair<Element, String>>
+		getElementBySelector(String selectorGroupText, Document document){
+		ArrayList<Pair<Element, String>> result =
+			new ArrayList<Pair<Element, String>>();
 		
 		// Split group by comma symbol and spaces
 		String[] selectorTexts = selectorGroupText.split("\\s*,\\s*");
@@ -37,7 +42,9 @@ public class CSS1SelectorMatcher implements html2windows.css.SelectorMatcher{
 			Selector selector = compiler.compile(selectorText);
             if( selector != null ) {
                 ArrayList<Element> elements = select(selector, document);
-                result.addAll(elements);
+                for (Element element : elements) {
+                	result.add(new Pair<Element, String>(element, selectorText));
+                }
             }
 		}
 		

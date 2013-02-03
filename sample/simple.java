@@ -1,5 +1,7 @@
 import html2windows.css.CSSParser;
 import html2windows.css.FontPainter;
+import html2windows.css.Origin;
+import html2windows.dom.Element;
 import html2windows.dom.Document;
 import html2windows.dom.UIParser;
 import html2windows.css.CSS2Painter;
@@ -22,9 +24,6 @@ public class simple {
      */
     public static void main(String[] args) {
         Document document = new UIParser().parse(new File("ui.html"));
-        document.setLayout(new BlockLayout());
-        document.setPainter(new CSS2Painter());
-        document.setAtRuleHandler("document", new DocumentAtRuleHandler());
         
         try{
 		    FileInputStream fin = new FileInputStream("style.css");
@@ -38,7 +37,8 @@ public class simple {
 		    CharBuffer chBuff = Charset.forName("UTF-8").decode(byteBuff);
 		    String cssString = chBuff.toString();
 
-		    new CSSParser().parse(cssString, document);
+    		CSSParser cssParser = document.getCSSParser();
+		    cssParser.parse(Origin.LINK, cssString, document);
 		    }
 		catch(Exception ex){
 		    ex.printStackTrace();

@@ -1,5 +1,6 @@
 package html2windows.css;
 
+import html2windows.css.value.CSSBorder;
 import html2windows.dom.Element;
 import java.awt.*;
 
@@ -10,7 +11,7 @@ import java.util.*;
  *
  * @author bee040811
  */
-public class BlockLayout implements LayoutManager {
+public class BlockLayout implements LayoutManager2 {
 
     /**
      * preferredWidth mean that preferred width
@@ -109,7 +110,7 @@ public class BlockLayout implements LayoutManager {
         y0 = y;
 
         for (Component c : parent.getComponents()) {
-            if (c instanceof Element) {
+            if (isInNormalFlow(c)) {
                 Element element = (Element) c;
                 Style style = element.getStyle();
                 BlockLayout layout = (BlockLayout)element.getLayout();
@@ -120,10 +121,6 @@ public class BlockLayout implements LayoutManager {
                 
                 String floating = getFloat(style);
                 String position = getPosition(style);
-                
-                if("none".equals(style.getProperty("display"))) {
-                	continue;
-                }
                 
             	int width = layoutWidth(contentWidth, element, style, margin, border, padding);
             	
@@ -146,6 +143,25 @@ public class BlockLayout implements LayoutManager {
 				accumr.push(SpaceType.HEIGHT, d.height);
             }
         }
+    }
+    
+    public void addLayoutComponent(Component comp, Object constraints){
+    }
+    
+    public Dimension maximumLayoutSize(Container parent) {
+        return new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE);
+    }
+
+    public float getLayoutAlignmentX(Container parent) {
+        return 0f;
+    }
+
+    public float getLayoutAlignmentY(Container parent) {
+        return 0f;
+    }
+
+    public void invalidateLayout(Container parent) {
+        sizeUnknown = true;
     }
     
     /**
@@ -539,12 +555,11 @@ public class BlockLayout implements LayoutManager {
      * @return height   mean that height value
      */
     private int getHeight(Style style) {
-        int height = 50;
         int value = getPxNumber(style.getProperty("height"));
         if(value != 0) {
             return value;
         }
-        return height;
+        return 0;
     }
 
     /**
@@ -641,6 +656,10 @@ public class BlockLayout implements LayoutManager {
      * @return Border with widths
      */
     private Border getBorder(Style style, Box box){
+    	if (box == Box.BORDER) {
+    		return getBorder(style);
+    	}
+    
     	Border border = new Border();
     	border.top = getWidth(style, box, Edge.TOP);
     	border.right = getWidth(style, box, Edge.RIGHT);
@@ -648,6 +667,20 @@ public class BlockLayout implements LayoutManager {
     	border.left = getWidth(style, box, Edge.LEFT);
     	
     	return border;
+    }
+    
+    private Border getBorder(Style style){
+    	CSSBorder cssBorder = (CSSBorder)style.getPropertyHandlerData("border");
+    	Border border = new Border();
+    	border.top = cssBorder.top().style != CSSBorder.Style.NONE ?
+    				cssBorder.top().width : 0;
+    	border.right = cssBorder.right().style != CSSBorder.Style.NONE ?
+    				cssBorder.right().width : 0;
+    	border.bottom = cssBorder.bottom().style != CSSBorder.Style.NONE ?
+    				cssBorder.bottom().width : 0;
+    	border.left = cssBorder.left().style != CSSBorder.Style.NONE ?
+    				cssBorder.left().width : 0;
+		return border;
     }
 
     /**

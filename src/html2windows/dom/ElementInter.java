@@ -37,10 +37,10 @@ public class ElementInter extends Element implements NodeInter {
      * 
      * @param	tagName This element's tagName
      */
-    public ElementInter(String tagName) {
+    public ElementInter(Document ownerDocument, String tagName) {
+    	this.ownerDocument = ownerDocument;
     	 tagNameValue = tagName;
     	 setStyle(null);
-		 setLayout(new BlockLayout());
     }
     
     /**

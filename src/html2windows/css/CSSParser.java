@@ -1,11 +1,17 @@
 package html2windows.css;
 
+import html2windows.css.parser.ValueParser;
 import html2windows.css.level1.CSS1SelectorMatcher;
 import html2windows.dom.Document;
 import html2windows.dom.Element;
+import html2windows.util.Pair;
 
 import java.util.ArrayList;
+import java.util.List;
+import java.util.HashMap;
 import java.util.regex.Pattern;
+
+import org.w3c.dom.DOMException;
 
 /**
  * Use for add style to each element
@@ -23,6 +29,11 @@ public class CSSParser {
     private static final int priority = 3;
     public CSSRuleSet ruleSet;
 
+	private Origin origin;
+	
+	private HashMap<String, ValueParser> propertyParsers =
+		new HashMap<String, ValueParser>();
+
     /**
      * Call this to start CSSParser, and it will parse cssString, 
      * and add style to each element
@@ -31,18 +42,19 @@ public class CSSParser {
      * @param document  the root of tree which has been built
      */
     
-    public void parse(String cssString, Document document) {
+    public void parse(Origin origin,
+    				  String cssString,
+    				  Document document) {
+        this.origin = origin;
         this.cssString = cssString;
         this.pos = 0;
         this.document = document;
-
-        this.ruleSet = new CSSRuleSet(priority);
 
         parseStyleSheet();
     }
     
     public CSSRuleSet parseRuleSet(String str){
-        ruleSet = new CSSRuleSet(priority);
+        ruleSet = new CSSRuleSet(this, origin, null);
         cssString = str;
         pos = 0;
         
@@ -64,6 +76,22 @@ public class CSSParser {
         }
         
         return ruleSet;
+    }
+    
+    public Object parseProperty(String propertyName, String value)
+    		throws DOMException {
+		ValueParser parser = propertyParsers.get(propertyName);
+    	if (parser != null)
+    		return parser.parse(propertyName, value);
+		return null;
+    }
+    
+    public void setPropertyParser(String propertyName, ValueParser parser){
+    	propertyParsers.put(propertyName, parser);
+    }
+    
+    public ValueParser getPropertyParser(String propertyName){
+    	return propertyParsers.get(propertyName);
     }
     
     /**
@@ -139,22 +167,23 @@ public class CSSParser {
             parseSpace();
             if (isNotEnd()) {
                 prePos = pos;
+                while(isNotEnd() && getChar() != '{' && getChar() != ';'){
+                	pos++;
+                }
                 if (getChar() == '{') {
                     pos++;
-                    while(isNotEnd() && getChar() != '}'){
-                        pos++;
-                    }
+                    parseBlock(); // Already parse '}'
                 }
                 else if (getChar() == ';') {
                     pos++;
-                    parseSpace();
                 }
-                nextPos = pos++;
+                nextPos = pos;
                 if(handler != null){
                     handler.handle(cssString.substring(prePos, nextPos ), document);
                 }
             }
         }
+        
     }
 
     /**
@@ -168,32 +197,21 @@ public class CSSParser {
 
         if (isNotEnd()) {
             parseSpace();
-            ch = getChar();
-            while (isNotEnd() && ch != '}') {
+            while (isNotEnd() && getChar() != '}') {
                 // block
-                if (ch == '{') {
+                if (getChar() == '{') {
                     pos++;
                     buffer += parseBlock();
                 }
-                // ATKEYWORD
-                else if (ch == '@') {
-                    pos++;
-                    buffer += parseIdent();
-                }
-                // ';'
-                else if (ch == ';') {
-                    pos++;
-                    parseSpace();
-                }
                 // any
                 else {
-                    parseAny();
+                    buffer += parseAny();
                 }
             }
 
-            if (isNotEnd() && ch == '}') {
+            if (isNotEnd() && getChar() == '}') {
+            	buffer += "}";
                 pos++;
-                parseSpace();
             }
         }
 
@@ -209,15 +227,14 @@ public class CSSParser {
      *          return null
      */
     private void parseRuleSet() {
-        ArrayList<Element> elements = null;
         String selector = "";
 
         if (isNotEnd()) {
             selector = "";
-            ruleSet = new CSSRuleSet(priority);
             if (Pattern.compile("(. *?)\\{").matcher(cssString.substring(pos))
                     .find()) {
                 selector += parseSelector();
+				ruleSet = new CSSRuleSet(this, origin, selector);
 
                 if (isNotEnd() && getChar() == '{') {
                     pos++;
@@ -227,15 +244,25 @@ public class CSSParser {
                         while (isNotEnd() && getChar() == ';') {
                             pos++;
                             parseSpace();
+                            if (isNotEnd() && getChar() == '}') {
+                            	break;
+                            }
                             parseDeclaration();
                         }
                         if (isNotEnd() && getChar() == '}') {
                             pos++;
-                            parseSpace();
+                            
+                            SelectorMatcher selectorMatcher =
+                            	new CSS1SelectorMatcher();
+                            
                             // put ruleset into element
-                            elements = new CSS1SelectorMatcher().getElementBySelector(selector, document);
-                            for(Element e: elements){
-                                e.getStyle().addCSSRuleSet(ruleSet);
+                            List<Pair<Element, String>> pairs = selectorMatcher.
+                            		getElementBySelector(selector, document);
+                            		
+                            for(Pair<Element, String> pair: pairs){
+                            	Element e = pair.getLeft();
+                                e.getStyle().addCSSRuleSet(ruleSet,
+                                						   pair.getRight());
                             }
                         }
                     }
@@ -327,7 +354,7 @@ public class CSSParser {
                     buffer += parseAny();
                 }
             }
-            while (isNotEnd() && getChar() != ';');
+            while (isNotEnd() && getChar() != ';' && getChar() != '}');
         }
 
         return buffer;
