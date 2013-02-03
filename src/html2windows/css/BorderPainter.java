@@ -202,8 +202,8 @@ public class BorderPainter extends JPanel implements CSSPainter{
 							int length){
 		g.setStroke(new BasicStroke(width));
 		
-		int x1 = (int)Math.ceil(left + width * 0.5 * vertical(orientation));
-		int y1 = (int)Math.ceil(top  + width * 0.5 * horizontal(orientation));
+		int x1 = cell(left + width * 0.5 * vertical(orientation));
+		int y1 = cell(top  + width * 0.5 * horizontal(orientation));
 		int x2 = x1 + length * horizontal(orientation);
 		int y2 = y1 + length * vertical(orientation);
 		
@@ -219,15 +219,15 @@ public class BorderPainter extends JPanel implements CSSPainter{
 		double lineWidth = Math.ceil(width / 3);
 		g.setStroke(new BasicStroke((float)lineWidth));
 		{
-			int x1 = ceil(left + lineWidth * 0.5 * vertical(orientation));
-			int y1 = ceil(top  + lineWidth * 0.5 * horizontal(orientation));
+			int x1 = cell(left + lineWidth * 0.5 * vertical(orientation));
+			int y1 = cell(top  + lineWidth * 0.5 * horizontal(orientation));
 			int x2 = x1 + length * horizontal(orientation);
 			int y2 = y1 + length * vertical(orientation);
 			g.drawLine(x1, y1, x2, y2);
 		}
 		{
-			int x1 = ceil(left + lineWidth * 2.5 * vertical(orientation));
-			int y1 = ceil(top  + lineWidth * 2.5 * horizontal(orientation));
+			int x1 = cell(left + lineWidth * 2.5 * vertical(orientation));
+			int y1 = cell(top  + lineWidth * 2.5 * horizontal(orientation));
 			int x2 = x1 + length * horizontal(orientation);
 			int y2 = y1 + length * vertical(orientation);
 			g.drawLine(x1, y1, x2, y2);
@@ -244,8 +244,8 @@ public class BorderPainter extends JPanel implements CSSPainter{
 					BasicStroke.JOIN_MITER, 10f,
 					new float[] {0, width * 2}, width * 1.5f));
 		
-		int x1 = (int)Math.ceil(left + width * 0.5 * vertical(orientation));
-		int y1 = (int)Math.ceil(top  + width * 0.5 * horizontal(orientation));
+		int x1 = cell(left + width * 0.5 * vertical(orientation));
+		int y1 = cell(top  + width * 0.5 * horizontal(orientation));
 		int x2 = x1 + length * horizontal(orientation);
 		int y2 = y1 + length * vertical(orientation);
 		
@@ -260,8 +260,8 @@ public class BorderPainter extends JPanel implements CSSPainter{
 		return (orientation == Orientation.VERTICAL ? 1 : 0);
 	}
 	
-	private int ceil(double d){
-		return (int)Math.ceil(d);
+	private int cell(double d){
+		return (int)Math.floor(d);
 	}
 	
 	private Stroke setStroke(){
