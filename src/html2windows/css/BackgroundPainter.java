@@ -1,8 +1,10 @@
 package html2windows.css;
 
 import html2windows.css.Style;
+import html2windows.css.parser.ColorParser;
 import html2windows.dom.Element;
 
+import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.util.HashMap;
@@ -63,7 +65,11 @@ public class BackgroundPainter extends JPanel implements CSSPainter{
         setWidth();
         setHeight();
         
-        g2d.fillRect(0, 0, element.getWidth(), element.getHeight());
+		Color color = (Color)style.getPropertyComputedValue("background-color");
+		if (color != null) {
+			g.setColor(color);
+		    g.fillRect(0, 0, element.getWidth(), element.getHeight());
+        }
     }
     
     /**
