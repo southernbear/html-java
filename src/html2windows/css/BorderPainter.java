@@ -12,6 +12,7 @@ import java.awt.BasicStroke;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Stroke;
+import java.awt.geom.GeneralPath;
 
 public class BorderPainter implements CSSPainter{
 	
@@ -34,13 +35,31 @@ public class BorderPainter implements CSSPainter{
         CSSBorder.Edge[] edges = new CSSBorder.Edge[]{
         	border.top(), border.right(), border.bottom(), border.left()};
         
-        int[][] start = new int[][]{
+        int[][] startTL = new int[][]{
         	new int[]{0, 0},
         	new int[]{0, compWidth - border.right().width},
         	new int[]{compHeight - border.bottom().width, 0},
         	new int[]{0, 0}
         };
-        
+		  
+        int[][] clipTLInner = new int[][]{
+        	new int[]{border.top().width,
+        			  border.left().width},
+        	new int[]{border.top().width,
+        			  compWidth - border.right().width},
+        	new int[]{compHeight - border.bottom().width,
+        			  compWidth - border.right().width},
+        	new int[]{compHeight - border.bottom().width,
+        			  border.left().width}
+        };
+
+        int[][] clipTLOuter = new int[][]{
+        	new int[]{0, 0},
+        	new int[]{0, compWidth},
+        	new int[]{compHeight, compWidth},
+        	new int[]{compHeight, 0}
+        };
+
 		for (int i = 0; i < edges.length; i++) {
 			CSSBorder.Edge edge = edges[i];
 			Orientation orientation =
@@ -59,40 +78,53 @@ public class BorderPainter implements CSSPainter{
 		    	if (width > 0) {
 		    		g.setColor(color);
 		    		
+		    		int j = (i + 1) % 4;
+		    		
+		    		GeneralPath p = new GeneralPath();
+		    		p.moveTo(clipTLOuter[i][1], clipTLOuter[i][0]);
+		    		p.lineTo(clipTLInner[i][1], clipTLInner[i][0]);
+		    		p.lineTo(clipTLInner[j][1], clipTLInner[j][0]);
+		    		p.lineTo(clipTLOuter[j][1], clipTLOuter[j][0]);
+		    		p.closePath();
+		    		
+		    		g2d.clip(p);
+		    		
 		    		switch (edge.style) {
 		    			case SOLID :
 	    					paintSolid(g2d,
 	    								orientation,
-	    								start[i][0],
-	    								start[i][1],
+	    								startTL[i][0],
+	    								startTL[i][1],
 	    								width,
 	    								compWidth);
 		    				break;
 	    				case DOUBLE :
 	    					paintDouble(g2d,
 	    								orientation,
-	    								start[i][0],
-	    								start[i][1],
+	    								startTL[i][0],
+	    								startTL[i][1],
 	    								width,
 	    								compWidth);
 							break;
 	    				case DOTTED :
 	    					paintDotted(g2d,
 	    								orientation,
-	    								start[i][0],
-	    								start[i][1],
+	    								startTL[i][0],
+	    								startTL[i][1],
 	    								width,
 	    								compWidth);
 							break;
 	    				case DASHED :
 	    					paintDashed(g2d,
 	    								orientation,
-	    								start[i][0],
-	    								start[i][1],
+	    								startTL[i][0],
+	    								startTL[i][1],
 	    								width,
 	    								compWidth);
 							break;
 		    		}
+		    		
+		    		g2d.setClip(null);
 		    	}
 		    }
 	    }
