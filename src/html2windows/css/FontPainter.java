@@ -29,6 +29,7 @@ import html2windows.dom.Node;
 import html2windows.dom.NodeList;
 import html2windows.dom.Text;
 import html2windows.css.Style;
+import html2windows.css.parser.ColorParser;
 
 import javax.swing.text.StyleConstants; 
 
@@ -111,7 +112,7 @@ public class FontPainter extends JPanel implements CSSPainter {
         getFontStyle(style, "line-height");
         getFontText(element);
         setFont();
-        setColor();
+        setColor(style);
 
 		if (this.text == null || this.text.length() == 0)
 			return;
@@ -275,9 +276,9 @@ public class FontPainter extends JPanel implements CSSPainter {
     /**
      * Set color by user defined property "border-color"     
      */
-    public void setColor(){
-        String color=property.get("color").toLowerCase();
-        g2d.setColor(ColorConverter.convert(color));
+    public void setColor(Style style){
+    	Color color = (Color)style.getPropertyComputedValue("color");
+        g2d.setColor(color);
     }
 
     /**
